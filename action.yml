@@ -1,18 +1,52 @@
-name: 'Generador de Versión Dinámico'
-description: 'Recibe un prefijo y un número para generar un tag de versión normalizado.'
-branding:
-  icon: 'tag'
-  color: 'blue'
+name: 'Enterprise Branch Validator & Versioner'
+description: 'Valida el formato de la rama actual y genera una version semantica automatica.'
+author: 'Tu Nombre'
+ 
 inputs:
-  prefijo:
-    description: 'El prefijo de la versión (ej. v, prod, dev)'
+  branch_name:
+    description: 'Nombre de la rama a evaluar'
     required: true
-  numero_build:
-    description: 'El número identificador de la build'
-    required: true
+    default: 'feature/nueva-mejora'
+  environment_tier:
+    description: 'Tier del entorno (DEV, STG, PROD)'
+    required: false
+    default: 'DEV'
+ 
 outputs:
-  version_generada:
-    description: 'El string de la versión final estructurada'
+  is_valid:
+    description: 'Devuelve true si la rama sigue el estandar corporativo'
+    value: ${{ steps.procesador.outputs.is_valid }}
+  generated_version:
+    description: 'Version semantica dinamica autogenerada'
+    value: ${{ steps.procesador.outputs.generated_version }}
+ 
+branding:
+  icon: 'shield'
+  color: 'blue'
+ 
 runs:
-  using: 'node20'
-  main: 'index.js'
+  using: 'composite'
+  steps:
+    - id: procesador
+      shell: bash
+      run: |
+        echo "=== INICIANDO LOGICA DE CUSTOM ACTION ==="
+        INPUT_BRANCH="${{ inputs.branch_name }}"
+        INPUT_TIER="${{ inputs.environment_tier }}"
+        if [ -z "$INPUT_BRANCH" ]; then
+          echo "::error:: El parametro branch_name no puede estar vacio."
+          exit 1
+        fi
+        echo "Procesando rama: $INPUT_BRANCH"
+        echo "Contexto del Tier: $INPUT_TIER"
+        VALID_PATTERN="^(feature\/|bugfix\/|release\/|main).*$"
+        if [[ "$INPUT_BRANCH" =~ $VALID_PATTERN ]]; then
+          echo "✅ El nombre de la rama cumple los estandares de la empresa."
+          echo "is_valid=true" >> $GITHUB_OUTPUT
+          TIMESTAMP=$(date +%Y%m%d.%H%M)
+          echo "generated_version=v1.0.${TIMESTAMP}-${INPUT_TIER}" >> $GITHUB_OUTPUT
+        else
+          echo "❌ [ERROR] El nombre de la rama no sigue la politica corporativa (ej: feature/nombre)."
+          echo "is_valid=false" >> $GITHUB_OUTPUT
+          echo "generated_version=v0.0.0-REJECTED" >> $GITHUB_OUTPUT
+        fi
