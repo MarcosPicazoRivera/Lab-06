@@ -1,0 +1,18 @@
+name: 'Generador de Versión Dinámico'
+description: 'Recibe un prefijo y un número para generar un tag de versión normalizado.'
+branding:
+  icon: 'tag'
+  color: 'blue'
+inputs:
+  prefijo:
+    description: 'El prefijo de la versión (ej. v, prod, dev)'
+    required: true
+  numero_build:
+    description: 'El número identificador de la build'
+    required: true
+outputs:
+  version_generada:
+    description: 'El string de la versión final estructurada'
+runs:
+  using: 'node20'
+  main: 'index.js'
